@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-#$Id $
 #####   CONFIGURATION   #####
 # Database must have schema version 3.1.x installed
 our $DATABASE = [ 
@@ -41,13 +40,13 @@ use DBI;
 use DBD::Pg;
 use POE::Component::Client::DNS;
 use Data::Dumper;
-our $VERSION = ( q$Rev: 158 $ =~ /(\d+)/ )[0];
+
 main();
 exit(0);
 #############################
 sub DEBUG (@) { if ( shift(@_) <= $::DEBUG_LEVEL ) { print join "\n", @_; print "\n"; } }
 sub main {
-    DEBUG 1, "Starting MyLog v$VERSION";
+    DEBUG 1, "Starting MyLog";
     
     # Setup each Network
     my $resolver = POE::Component::Client::DNS->spawn( Alias => 'resolver' );
@@ -70,7 +69,7 @@ sub main {
             Ircname     => $nconf->[1]->[2],
             Resolver    => $resolver,
             Server      => $nconf->[2]->[0],
-            plugin_debug => 1,
+            plugin_debug => 0,
         );
         #$pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
         #    delay => 150, reconnect => 40,
@@ -98,7 +97,7 @@ sub main {
 package MyLogger;  # ----- IRC Event Handlers -----
 use POE::Component::IRC::Plugin qw( :ALL );
 sub DEBUG (@) { if ( shift(@_) <= $::DEBUG_LEVEL ) { print join "\n", @_; print "\n"; } }
-use Data::Dumper; $Data::Dumper::Indent = 1;
+use Data::Dumper;
 
 sub new {
     my ($package, $name, $inserter) = @_;
@@ -225,7 +224,7 @@ sub _INSP () { 7 }
 sub new {
     my ($package) = @_;
     
-    $Data::Dumper::Indent = 1;
+    $Data::Dumper::Indent = 0;
     
     return bless [
         undef,
@@ -333,7 +332,7 @@ sub connected {
 }
 
 sub join {
-    DEBUG "join:  ".Dumper(@_[1..$#_]);
+    DEBUG "join:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $nick, $ident, $host, $channel) = @_;
     
     my $network_id = $self->m_sql( network_id => $network );
@@ -344,7 +343,7 @@ sub join {
 }
 
 sub kick {
-    DEBUG "kick:  ".Dumper(@_[1..$#_]);
+    DEBUG "kick:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $kicked_nick, $kicked_ident, $kicked_host, $kicker_nick, $kicker_ident, $kicker_host, $channel, $reason) = @_;
     
     my $network_id = $self->m_sql( network_id => $network );
@@ -357,12 +356,12 @@ sub kick {
 }
 
 sub mode {
-    DEBUG "mode:  ".Dumper(@_[1..$#_]);
+    DEBUG "mode:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $nick, $ident, $host, $channel) = @_;
 }
 
 sub nick {
-    DEBUG "nick:  ".Dumper(@_[1..$#_]);
+    DEBUG "nick:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $old_nick, $new_nick, $ident, $host) = @_;
     
     my $network_id  = $self->m_sql( network_id => $network );
@@ -373,7 +372,7 @@ sub nick {
 }
 
 sub part {
-    DEBUG "part:  ".Dumper(@_[1..$#_]);
+    DEBUG "part:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $nick, $ident, $host, $channel, $reason) = @_;
     
     my $network_id = $self->m_sql( network_id => $network );
@@ -381,11 +380,11 @@ sub part {
     my $user_id    = $self->m_sql( user_id => $network_id, $nick, $ident, $host );
     my $reason_id  = $self->m_sql( reason_id => $reason );
     
-    $self->m_sql( insert_part => $user_id, $network_id, $channel_id, $reason_id );
+    $self->s_insert( insert_part => $user_id, $network_id, $channel_id, $reason_id );
 }
 
 sub public {
-    DEBUG "public:  ".Dumper(@_[1..$#_]);
+    DEBUG "public:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $nick, $ident, $host, $channel, $msg) = @_;
     
     my $network_id = $self->m_sql( network_id => $network );
@@ -396,7 +395,7 @@ sub public {
 }
 
 sub quit {
-    DEBUG "quit:  ".Dumper(@_[1..$#_]);
+    DEBUG "quit:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $nick, $ident, $host, $reason) = @_;
     
     my $network_id = $self->m_sql( network_id => $network );
@@ -407,7 +406,7 @@ sub quit {
 }
 
 sub topic {
-    DEBUG "topic:  ".Dumper(@_[1..$#_]);
+    DEBUG "topic:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $nick, $ident, $host, $channel, $topic) = @_;
     
     my $network_id = $self->m_sql( network_id => $network );
