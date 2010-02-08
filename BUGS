@@ -1,0 +1,11 @@
+$Id: BUGS 149 2010-02-04 18:25:29Z immute $
+
+-------------------------
+-  Currently Open Bugs  -
+-------------------------
+
+* irssi-mylog.pl pukes when a message is stored from a nick that is longer than 32 characters
+  - this is because the store nick silently truncates the stored value; the next time that a
+    message from that nick is attempted to insert, the lookup of the nick_id fails (because its
+    been truncated) but then inserting the new nick_id HARD FAILS because of the UNIQUE constraint
+  - solution is to either make the nick column longer, or truncate before looking up the nick
