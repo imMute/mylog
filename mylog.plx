@@ -24,7 +24,7 @@ our $NETWORKS = [
         'FreeNode',
         [ 'imMutebot', 'imMute', 'imMute\'s faithful logging bot', ],
         [ 'irc.freenode.org', 6667 ],
-        [ '#perl','#irssi','#ubuntu','##networking','#sparkfun' ],
+        [ '#perl','#irssi','#ubuntu','##networking','#sparkfun','#httpd','##electronics' ],
     ],
 ];
 our $DEBUG_LEVEL = 9;
@@ -164,7 +164,7 @@ sub S_nick {
     DEBUG 10, $self->[0]."> NICK ".Dumper([@_[2..$#_]]);
     
     my ($oldnick,$ident,$host) = split /[!@]/, $$nickhost;
-    $self->[1]->nick({}, $self->[0],$oldnick,$newnick,$ident,$host);
+    $self->[1]->nick({}, $self->[0],$oldnick,$$newnick,$ident,$host);
     return PCI_EAT_NONE;
 }
 
