@@ -1,11 +1,10 @@
 ﻿-- ------------------------------------------------------------
--- - mylog schema version: 3.1.1
--- - $Id: mylog-schema.sql 157 2010-02-06 02:54:39Z immute $
--- - $Rev: 157 $
--- - $Date: 2010-02-06 02:54:39 +0000 (Sat, 06 Feb 2010) $
+-- -  Mylog PostgreSQL Schema Version: 3.1.2
 -- ------------------------------------------------------------
 
-SET search_path TO mylog;
+DROP SCHEMA IF EXISTS "mylog";
+CREATE SCHEMA "mylog";
+SET search_path TO "mylog";
 
 CREATE TABLE "networks" (
   "id"          SERIAL UNIQUE,

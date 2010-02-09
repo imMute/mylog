@@ -1,24 +1,33 @@
 -- ------------------------------------------------------------
--- - mylog views version: 3.0.0 -
--- - $Id: mylog-views.sql 149 2010-02-04 18:25:29Z immute $
--- - $Rev: 149 $
--- - $Date: 2010-02-04 18:25:29 +0000 (Thu, 04 Feb 2010) $
+-- -  Mylog PostgreSQL Views Version: 3.1.2
 -- ------------------------------------------------------------
+
+CREATE VIEW "view_user_id" AS (
+  SELECT
+    "n"."network" AS "network",
+    "u"."nick" AS "nick",
+    "u"."ident" AS "ident",
+    "u"."hostname" AS "hostname"
+  FROM "mylog"."user_id" "u"
+    JOIN "mylog"."networks" "n" on "u"."network_id" = "n"."id"
+);
 
 CREATE VIEW "view_joins" AS (
   SELECT
     "j"."id" AS "id",
     "j"."timestamp" AS "timestamp",
     "c"."channel" AS "channel",
-    "c"."network" AS "network",
-    "v"."nick" AS "nick",
-    "v"."ident" AS "ident",
-    "v"."hostname" AS "hostname"
-  FROM "joins" "j"
-    JOIN "view_user_id" "v" on "v"."id" = "j"."user_id"
-    JOIN "channels" "c" on "j"."channel_id" = "c"."id"
+    "n"."network" AS "network",
+    "u"."nick" AS "nick",
+    "u"."ident" AS "ident",
+    "u"."hostname" AS "hostname"
+  FROM "mylog"."joins" "j"
+    JOIN "mylog"."channels" "c" on "j"."channel_id" = "c"."id"
+    JOIN "mylog"."networks" "c" on "j"."network_id" = "n"."id"
+    JOIN "mylog"."user_id" "u"  on "j"."user_id" = "u"."id"
 );
 
+/*
 CREATE VIEW "view_kicks" AS (
   SELECT
     "k"."id" AS "id",
@@ -38,23 +47,25 @@ CREATE VIEW "view_kicks" AS (
     JOIN "reasons" "q" on "q"."id" = "k"."reason_id"
     JOIN "channels" "c" on "c"."id" = "k"."channel_id"
 );
+*/
 
 CREATE VIEW "view_messages" AS (
   SELECT
     "m"."id" AS "id",
     "m"."timestamp" AS "timestamp",
     "c"."channel" AS "channel",
-    "c"."network" AS "network",
-    "v"."nick" AS "nick",
-    "v"."ident" AS "ident",
-    "v"."hostname" AS "hostname",
+    "n"."network" AS "network",
+    "u"."nick" AS "nick",
+    "u"."ident" AS "ident",
+    "u"."hostname" AS "hostname",
     "m"."message" AS "message"
-  FROM "messages" "m"
-    JOIN "channels" "c" on "m"."channel_id" = "c"."id"
-    JOIN "view_user_id" "v" on "v"."id" = "m"."user_id" 
+  FROM "mylog"."messages" "m"
+    JOIN "mylog"."channels" "c" on "m"."channel_id" = "c"."id"
+    JOIN "mylog"."networks" "n" on "m"."network_id" = "n"."id"
+    JOIN "mylog"."user_id"  "u" on "m"."user_id" = "u"."id" 
 );  
 
-/* wtf?
+/*
 CREATE VIEW "view_nick_changes" AS (
   SELECT
     "nc"."id" AS "id",
@@ -67,6 +78,7 @@ CREATE VIEW "view_nick_changes" AS (
 );
 */
 
+/*
 CREATE VIEW "view_parts" AS (
   SELECT
     "p"."id" AS "id",
@@ -82,7 +94,9 @@ CREATE VIEW "view_parts" AS (
     JOIN "channels" "c" on "p"."channel_id" = "c"."id" 
     JOIN "reasons" "q" on "p"."reason_id" = "q"."id"
 );
+*/
 
+/*
 CREATE VIEW "view_quits" AS (
   SELECT
     "q"."id" AS "id",
@@ -95,7 +109,9 @@ CREATE VIEW "view_quits" AS (
     JOIN "view_user_id" "v" on "v"."id" = "q"."user_id"
     JOIN "reasons" "m" on "m"."id" = "q"."reason_id"
 );
+*/
 
+/*
 CREATE VIEW "view_topics" AS (
   SELECT
     "t"."id" AS "id",
@@ -110,3 +126,4 @@ CREATE VIEW "view_topics" AS (
     JOIN "channels" "c" on "c"."id" = "t"."channel_id"
     JOIN "view_user_id" "v" on "v"."id" = "t"."user_id"
 );
+*/
