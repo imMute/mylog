@@ -20,10 +20,10 @@ sub new {
     return bless [
         undef,
         {
-            network_id  => q!SELECT "id" FROM "mylog"."networks" WHERE "network" = ?!,
-            user_id     => q!SELECT "id" FROM "mylog"."user_id"  WHERE "network_id" = ? AND "nick" = ? AND "ident" = ? AND "hostname" = ?!,
-            channel_id  => q!SELECT "id" FROM "mylog"."channels" WHERE "channel" = ?!,
-            reason_id   => q!SELECT "id" FROM "mylog"."reasons"  WHERE "reason" = ?!,
+            network_id  => q!SELECT "id" FROM "networks" WHERE "network" = ?!,
+            user_id     => q!SELECT "id" FROM "user_id"  WHERE "network_id" = ? AND "nick" = ? AND "ident" = ? AND "hostname" = ?!,
+            channel_id  => q!SELECT "id" FROM "channels" WHERE "channel" = ?!,
+            reason_id   => q!SELECT "id" FROM "reasons"  WHERE "reason" = ?!,
         },
         {},
         {
@@ -33,21 +33,21 @@ sub new {
             reason_id  => "reasons",
         },
         {
-            network_id  => q!INSERT INTO "mylog"."networks"      VALUES(DEFAULT, ?)!,
-            user_id     => q!INSERT INTO "mylog"."user_id"       VALUES(DEFAULT, ?, ?, ?, ?)!,
-            channel_id  => q!INSERT INTO "mylog"."channels"      VALUES(DEFAULT, ?)!,
-            reason_id   => q!INSERT INTO "mylog"."reasons"       VALUES(DEFAULT, ?)!,
+            network_id  => q!INSERT INTO "networks"      VALUES(DEFAULT, ?)!,
+            user_id     => q!INSERT INTO "user_id"       VALUES(DEFAULT, ?, ?, ?, ?)!,
+            channel_id  => q!INSERT INTO "channels"      VALUES(DEFAULT, ?)!,
+            reason_id   => q!INSERT INTO "reasons"       VALUES(DEFAULT, ?)!,
         },
         {},
         {
-            insert_join   => q!INSERT INTO "mylog"."joins"        VALUES(DEFAULT, NOW(), ?, ?, ?)!,
-            insert_kick   => q!INSERT INTO "mylog"."kicks"        VALUES(DEFAULT, NOW(), ?, ?, ?, ?, ?)!,
-            insert_msg    => q!INSERT INTO "mylog"."messages"     VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
-            insert_pm     => q!INSERT INTO "mylog"."pms"          VALUES(DEFAULT, NOW(), ?, ?, ?)!,
-            insert_nick   => q!INSERT INTO "mylog"."nick_changes" VALUES(DEFAULT, NOW(), ?, ?, ?)!,
-            insert_part   => q!INSERT INTO "mylog"."parts"        VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
-            insert_quit   => q!INSERT INTO "mylog"."quits"        VALUES(DEFAULT, NOW(), ?, ?, ?)!,
-            insert_topic  => q!INSERT INTO "mylog"."topics"       VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
+            insert_join   => q!INSERT INTO "joins"        VALUES(DEFAULT, NOW(), ?, ?, ?)!,
+            insert_kick   => q!INSERT INTO "kicks"        VALUES(DEFAULT, NOW(), ?, ?, ?, ?, ?)!,
+            insert_msg    => q!INSERT INTO "messages"     VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
+            insert_pm     => q!INSERT INTO "pms"          VALUES(DEFAULT, NOW(), ?, ?, ?)!,
+            insert_nick   => q!INSERT INTO "nick_changes" VALUES(DEFAULT, NOW(), ?, ?, ?)!,
+            insert_part   => q!INSERT INTO "parts"        VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
+            insert_quit   => q!INSERT INTO "quits"        VALUES(DEFAULT, NOW(), ?, ?, ?)!,
+            insert_topic  => q!INSERT INTO "topics"       VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
         },
         {},
     ], $package;
@@ -67,6 +67,8 @@ sub init {
             RaiseError => 1,
         },
     ) or die "Could not spawn DBI connection: $DBI::errstr";
+    
+    $dbh->do('SET search_path = "mylog"');
     
     while ( my ($name, $sql) = each %{ $self->[_GETS] } ){
         $self->[_GETP]->{$name} = $dbh->prepare( $sql )
@@ -206,3 +208,6 @@ sub topic {
     
     $self->s_insert( insert_topic => $user_id, $network_id, $channel_id, $topic );
 }
+
+
+1;
