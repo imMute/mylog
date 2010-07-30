@@ -17,7 +17,7 @@ sub PCI_register {
         connected
         join kick part quit
         mode nick topic
-        public
+        public ctcp_action
     ]);
     return 1;
 }
@@ -88,6 +88,17 @@ sub S_public {
     my ($nick,$ident,$host) = split /[!@]/, $$nickhost;
     foreach my $channel ( @$$channels ){
         $self->[1]->public({}, $self->[0],$nick,$ident,$host,$channel,$$message);
+    }
+    return PCI_EAT_NONE;
+}
+
+sub S_ctcp_action {
+    my ($self, $irc, $nickhost, $channels, $message) = @_;
+    DEBUG 10, $self->[0]."> PUBLIC ".Dumper([@_[2..$#_]]);
+    
+    my ($nick,$ident,$host) = split /[!@]/, $$nickhost;
+    foreach my $channel ( @$$channels ){
+        $self->[1]->public({}, $self->[0],$nick,$ident,$host,$channel,"/me " . $$message);
     }
     return PCI_EAT_NONE;
 }

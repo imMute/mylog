@@ -1,37 +1,36 @@
 #!/usr/bin/perl
 #####   CONFIGURATION   #####
 # Database must have schema version 3.1.x installed
-our $DATABASE = [ 
-    'localhost',    # hostname or ip
-    5432,           # port
-    'irssi',        # user
-    'irssi',        # password
-    'postgres'         # database
-];
-#$DATABASE = [ '192.168.18.1', 5432, 'irssi','irssi','postgres' ];
+#our $DATABASE = [ 
+#    'localhost',    # hostname or ip
+#    5432,           # port
+#    'irssi',        # user
+#    'irssi',        # password
+#    'postgres'         # database
+#];
+our $DATABASE = [ '192.168.18.1', 5432, 'mylogadmin','mylog','mylog' ];
 our $NETWORKS = [
     [
         # Network Name
         'MAGnet',
         # Nick       Username  IRCName / whois comment
         [ 'imMutebot', 'imMute', 'imMute\'s faithful logging bot', ],
-        # Array of  Server host/ip,  port
-        [
-            [ 'irc.perl.org', 6667 ],
-        ]
+        # Server host/ip,  port
+        [ 'irc.perl.org', 6667 ],
         # Default Channels
-        [ '#bots', '#perl','#poe' ],
+        [ '#bots', ], #'#perl','#poe' 
     ],
-    [
-        'FreeNode',
-        [ 'imMutebot', 'imMute', 'imMute\'s faithful logging bot', ],
-        [ [ 'irc.freenode.org', 6667 ] ],
-        [ '#perl','#irssi','#ubuntu','##networking','#sparkfun','#httpd','##electronics' ],
-    ],
+    #[
+    #    'FreeNode',
+    #    [ 'imMutebot', 'imMute', 'imMute\'s faithful logging bot', ],
+    #    [ [ 'irc.freenode.org', 6667 ] ],
+    #    [ '#perl','#irssi','#ubuntu','##networking','#sparkfun','#httpd','##electronics' ],
+    #],
 ];
-our $DEBUG_LEVEL = 9;
+our $DEBUG_LEVEL = 7;
 #############################
 use strict;
+use lib './lib';
 use POE;
 use POE::Component::IRC::State;
 use POE::Component::IRC::Plugin::Connector;
@@ -62,6 +61,7 @@ sub main {
             alias       => 'pcg_'.$nconf->[0],
             alt_fork    => 0,
             debug       => ( $DEBUG_LEVEL > 7 ? 1 : 0),
+            verbose     => ( $DEBUG_LEVEL > 5 ? 1 : 0),
             package     => 'MyInserter',
             methods     => [qw[ init connected join kick mode nick part public quit topic ]],
         );
@@ -73,10 +73,14 @@ sub main {
             Ircname     => $nconf->[1]->[2],
             Resolver    => $resolver,
             plugin_debug => 0,
+            Server      => $nconf->[2]->[0],
+            Port        => $nconf->[2]->[1],
+            
+            socks_proxy => '127.0.0.1',
+            socks_port => 1337,
         );
         $pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
             delay => 150, reconnect => 40,
-            servers => $nconf->[2]->[0],
         ) );
         $pci->plugin_add( 'AutoJoin' => POE::Component::IRC::Plugin::AutoJoin->new(
             Channels => { map { $_ => '' } @{ $nconf->[3] } },
@@ -90,9 +94,8 @@ sub main {
         #    Ignore_unknown => 1,
         #) );
         $pci->plugin_add( 'MyLogger' => PCILogger->new($nconf->[0],$inserter) );
-        $pci->yield( 'connect' => {} );
+        $pci->yield( 'connect' => {});
     }
-    
     DEBUG 1, "Starting POE Kernel!";
     POE::Kernel->run();
 }

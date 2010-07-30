@@ -1,8 +1,9 @@
 package MyInserter;
 use DBI;
 use DBD::Pg;
-use Data::Dumper;
+use Data::Dumper qw//;
 sub DEBUG (@) { print join "\n", @_; print "\n"; }
+sub Dumper(@) { return substr Data::Dumper::Dumper(@_), 8; }
 sub _DBH () { 0 }
 sub _GETS () { 1 }
 sub _GETP () { 2 }
@@ -43,11 +44,9 @@ sub new {
             insert_join   => q!INSERT INTO "joins"        VALUES(DEFAULT, NOW(), ?, ?, ?)!,
             insert_kick   => q!INSERT INTO "kicks"        VALUES(DEFAULT, NOW(), ?, ?, ?, ?, ?)!,
             insert_msg    => q!INSERT INTO "messages"     VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
-            insert_pm     => q!INSERT INTO "pms"          VALUES(DEFAULT, NOW(), ?, ?, ?)!,
             insert_nick   => q!INSERT INTO "nick_changes" VALUES(DEFAULT, NOW(), ?, ?, ?)!,
             insert_part   => q!INSERT INTO "parts"        VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
             insert_quit   => q!INSERT INTO "quits"        VALUES(DEFAULT, NOW(), ?, ?, ?)!,
-            insert_topic  => q!INSERT INTO "topics"       VALUES(DEFAULT, NOW(), ?, ?, ?, ?)!,
         },
         {},
     ], $package;
@@ -121,6 +120,7 @@ sub m_sql {
 
 
 sub connected {
+    DEBUG "connected:  ".Dumper([@_[1..$#_]]);
     my ($self, $network, $name) = @_;
 }
 
@@ -196,17 +196,6 @@ sub quit {
     my $reason_id  = $self->m_sql( reason_id => $reason );
     
     $self->s_insert( insert_quit => $user_id, $network_id, $reason_id );
-}
-
-sub topic {
-    DEBUG "topic:  ".Dumper([@_[1..$#_]]);
-    my ($self, $network, $nick, $ident, $host, $channel, $topic) = @_;
-    
-    my $network_id = $self->m_sql( network_id => $network );
-    my $user_id    = $self->m_sql( user_id => $network_id, $nick, $ident, $host );
-    my $channel_id = $self->m_sql( channel_id => $channel );
-    
-    $self->s_insert( insert_topic => $user_id, $network_id, $channel_id, $topic );
 }
 
 

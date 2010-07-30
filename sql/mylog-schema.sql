@@ -96,19 +96,6 @@ CREATE TABLE "messages" (
 CREATE INDEX "idx_messages_timestamp" ON "messages" ("timestamp");
 
 
-CREATE TABLE "pms" (
-  "id"          SERIAL UNIQUE,
-  "timestamp"   TIMESTAMP NOT NULL DEFAULT NOW(),
-  "src"         INTEGER NOT NULL,
-  "dst"         INTEGER NOT NULL,
-  "message"     TEXT NOT NULL,
-  PRIMARY KEY   ("id"),
-  CONSTRAINT "FK_pms_src" FOREIGN KEY ("src") REFERENCES "user_id" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "FK_pms_dst" FOREIGN KEY ("dst") REFERENCES "user_id" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-CREATE INDEX "idx_pms_timestamp" ON "pms" ("timestamp");
-
-
 CREATE TABLE "nick_changes" (
   "id"          SERIAL UNIQUE,
   "timestamp"   TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -152,17 +139,3 @@ CREATE TABLE "quits" (
 );
 CREATE INDEX "idx_quits_timestamp" ON "quits" ("timestamp");
 
-
-CREATE TABLE "topics" (
-  "id"          SERIAL,
-  "timestamp"   TIMESTAMP NOT NULL DEFAULT NOW(),
-  "user_id"     INTEGER NOT NULL,
-  "network_id"  INTEGER NOT NULL,
-  "channel_id"  INTEGER NOT NULL,
-  "topic"       TEXT NOT NULL,
-  PRIMARY KEY   ("id"),
-  CONSTRAINT "FK_topics_user_id" FOREIGN KEY ("user_id") REFERENCES "user_id" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "FK_topics_network_id" FOREIGN KEY ("network_id") REFERENCES "networks" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "FK_topics_channel_id" FOREIGN KEY ("channel_id") REFERENCES "channels" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-CREATE INDEX "idx_topics_timestamp" ON "topics" ("timestamp");
