@@ -35,7 +35,7 @@ sub new {
         },
         {
             network_id  => q!INSERT INTO "networks"      VALUES(DEFAULT, ?)!,
-            user_id     => q!INSERT INTO "users"       VALUES(DEFAULT, ?, ?, ?, ?)!,
+            user_id     => q!INSERT INTO "users"         VALUES(DEFAULT, ?, ?, ?, ?)!,
             channel_id  => q!INSERT INTO "channels"      VALUES(DEFAULT, ?)!,
             reason_id   => q!INSERT INTO "reasons"       VALUES(DEFAULT, ?)!,
         },
@@ -91,8 +91,12 @@ sub s_get {
     my $sth = $self->[_GETP]->{$name};
     $sth->execute( @vars );
     my $v = $sth->fetchall_arrayref();
-    DEBUG "s_get return: ".Dumper($v);
-    return $v;
+    if ( ref $v->[0] ){
+        DEBUG "s_get return: ".Dumper($v->[0]->[0]);
+        return $v->[0]->[0];
+    } else {
+        return undef;
+    }
 }
 sub s_set {
     my ($self, $name, @vars) = @_;
@@ -111,9 +115,9 @@ sub s_insert {
 
 sub m_sql {
     my ($self, $name, @args) = @_;
-    my $R = $self->s_get($name, @args)->[0];
-    if (ref $R) {
-        return $R->[0];
+    my $R = $self->s_get($name, @args);
+    if (defined $R) {
+        return $R;
     } else {
         return $self->s_set($name, @args);
     }
