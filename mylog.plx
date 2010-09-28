@@ -8,7 +8,7 @@
 #    'irssi',        # password
 #    'postgres'         # database
 #];
-our $DATABASE = [ '192.168.18.1', 5432, 'mylogadmin','mylog','mylog' ];
+our $DATABASE = [ '192.168.18.1', 5432, 'mylog','mylog1234','mylog' ];
 our $NETWORKS = [
     [
         # Network Name

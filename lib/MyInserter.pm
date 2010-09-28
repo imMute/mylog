@@ -22,20 +22,20 @@ sub new {
         undef,
         {
             network_id  => q!SELECT "id" FROM "networks" WHERE "network" = ?!,
-            user_id     => q!SELECT "id" FROM "user_id"  WHERE "network_id" = ? AND "nick" = ? AND "ident" = ? AND "hostname" = ?!,
+            user_id     => q!SELECT "id" FROM "users"  WHERE "network_id" = ? AND "nick" = ? AND "ident" = ? AND "hostname" = ?!,
             channel_id  => q!SELECT "id" FROM "channels" WHERE "channel" = ?!,
             reason_id   => q!SELECT "id" FROM "reasons"  WHERE "reason" = ?!,
         },
         {},
         {
             network_id => "networks",
-            user_id    => "user_id",
+            user_id    => "users",
             channel_id => "channels",
             reason_id  => "reasons",
         },
         {
             network_id  => q!INSERT INTO "networks"      VALUES(DEFAULT, ?)!,
-            user_id     => q!INSERT INTO "user_id"       VALUES(DEFAULT, ?, ?, ?, ?)!,
+            user_id     => q!INSERT INTO "users"       VALUES(DEFAULT, ?, ?, ?, ?)!,
             channel_id  => q!INSERT INTO "channels"      VALUES(DEFAULT, ?)!,
             reason_id   => q!INSERT INTO "reasons"       VALUES(DEFAULT, ?)!,
         },
@@ -99,6 +99,7 @@ sub s_set {
     DEBUG "s_set: ".Dumper([$name,@vars]);
     $self->[_SETP]->{$name}->execute( @vars );
     my $v = $self->[_DBH]->last_insert_id( undef, "mylog", $self->[_TBL]->{$name}, undef );
+    $v+0;
     DEBUG "s_set return: ".Dumper($v);
     return $v;
 }
