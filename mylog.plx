@@ -8,7 +8,7 @@
 #    'irssi',        # password
 #    'postgres'         # database
 #];
-our $DATABASE = [ '192.168.18.1', 5432, 'mylog','mylog1234','mylog' ];
+our $DATABASE = [ '127.0.0.1', 5432, 'mylog','mylog1234','mylog' ];
 our $NETWORKS = [
     [
         # Network Name
@@ -75,9 +75,6 @@ sub main {
             plugin_debug => 0,
             Server      => $nconf->[2]->[0],
             Port        => $nconf->[2]->[1],
-            
-            socks_proxy => '127.0.0.1',
-            socks_port => 1337,
         );
         $pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
             delay => 150, reconnect => 40,
