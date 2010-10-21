@@ -54,11 +54,11 @@ sub new {
 
 sub init {
     my ($self) = shift;
-    my ($host,$port,$user,$pass,$db) = @{ $_[0] };
+    my $conf = shift;
     my $dbh = $self->[_DBH] = DBI->connect(
-        "dbi:Pg:dbname=$db;host=$host;port=$port",
-        $user,
-        $pass,
+        "dbi:Pg:dbname=$conf->{DB};host=$conf->{Host};port=$conf->{Port}",
+        $conf->{User},
+        $conf->{Pass},
         {
             AutoCommit => 1,
             PrintWarn => 1,
@@ -67,7 +67,7 @@ sub init {
         },
     ) or die "Could not spawn DBI connection: $DBI::errstr";
     
-    $dbh->do('SET search_path = "mylog"');
+    $dbh->do('SET search_path = "' . $conf->{DB} .'"');
     
     while ( my ($name, $sql) = each %{ $self->[_GETS] } ){
         $self->[_GETP]->{$name} = $dbh->prepare( $sql )

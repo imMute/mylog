@@ -1,34 +1,4 @@
 #!/usr/bin/perl
-#####   CONFIGURATION   #####
-# Database must have schema version 3.1.x installed
-#our $DATABASE = [ 
-#    'localhost',    # hostname or ip
-#    5432,           # port
-#    'irssi',        # user
-#    'irssi',        # password
-#    'postgres'         # database
-#];
-our $DATABASE = [ '127.0.0.1', 5432, 'mylog','mylog1234','mylog' ];
-our $NETWORKS = [
-    [
-        # Network Name
-        'MAGnet',
-        # Nick       Username  IRCName / whois comment
-        [ 'imMutebot', 'imMute', 'imMute\'s faithful logging bot', ],
-        # Server host/ip,  port
-        [ 'irc.perl.org', 6667 ],
-        # Default Channels
-        [ '#bots', ], #'#perl','#poe' 
-    ],
-    #[
-    #    'FreeNode',
-    #    [ 'imMutebot', 'imMute', 'imMute\'s faithful logging bot', ],
-    #    [ [ 'irc.freenode.org', 6667 ] ],
-    #    [ '#perl','#irssi','#ubuntu','##networking','#sparkfun','#httpd','##electronics' ],
-    #],
-];
-our $DEBUG_LEVEL = 7;
-#############################
 use strict;
 use lib './lib';
 use POE;
@@ -43,56 +13,94 @@ use POE::Component::Client::DNS;
 use Data::Dumper;
 use MyInserter;
 use PCILogger;
-
-main();
-exit(0);
-#############################
+use Config::General qw/ParseConfig/;
+use Getopt::Long;
+use Data::Dumper;
+use YAML::Syck;
 sub DEBUG (@) { if ( shift(@_) <= $::DEBUG_LEVEL ) { print join "\n", @_; print "\n"; } }
-sub main {
-    DEBUG 1, "Starting MyLog";
+
+my $conf_filename;
+my $DEBUG_LEVEL = 10;
+my $quiet = 0;
+
+GetOptions( "config=s" => \$conf_filename,
+            "debug=i"  => \$DEBUG_LEVEL,
+            "quiet"    => \$quiet );
+
+my $config = LoadFile( $conf_filename );
+
+# check config options 
+defined $config->{Database}->{$_} or die "Database::$_ is a required option"
+   for (qw/Type Host Port User Pass DB/);
+
+defined $config->{$_} or die "$_ is a required option"
+   for (qw/Nick Ident IRCName/);
+
+# copy some "default" values around
+foreach my $net ( keys %{ $config->{Networks} } ){
+    $config->{Networks}->{$net}->{__name} = $net;
+    $config->{Networks}->{$net}->{Nick}    ||= $config->{Nick};
+    $config->{Networks}->{$net}->{Ident}   ||= $config->{Ident};
+    $config->{Networks}->{$net}->{IRCName} ||= $config->{IRCName};
+}
+
+# Print the config for debugging
+print STDERR Dumper( $config );
+
+my $resolver = POE::Component::Client::DNS->spawn( Alias => 'resolver' );
+foreach my $key ( keys %{ $config->{Networks} } ){
+    create_network( $key, $config->{Networks}->{$key} );
+}
+DEBUG 1, "Starting POE Kernel!";
+POE::Kernel->run();
+
+sub create_network {
+    my ($name, $nconf) = @_;
+    DEBUG 5, "Setting up network '".$name."'";
+    DEBUG 7, "  Nick: $nconf->{Nick}","  Ident: $nconf-{Ident}","  Ircname: $nconf->{IRCName}";
     
-    # Setup each Network
-    my $resolver = POE::Component::Client::DNS->spawn( Alias => 'resolver' );
-    DEBUG 3, "Setting up networks";
-    foreach my $nconf ( @$NETWORKS ){
-        DEBUG 5, "Setting up network '".$nconf->[0]."'";
-        DEBUG 7, "  Nick: $nconf->[1]->[0]","  Username: $nconf->[1]->[1]","  Ircname: $nconf->[1]->[2]";
-        my $inserter = POE::Component::Generic->spawn(
-            alias       => 'pcg_'.$nconf->[0],
-            alt_fork    => 0,
-            debug       => ( $DEBUG_LEVEL > 7 ? 1 : 0),
-            verbose     => ( $DEBUG_LEVEL > 5 ? 1 : 0),
-            package     => 'MyInserter',
-            methods     => [qw[ init connected join kick mode nick part public quit topic ]],
-        );
-        $inserter->init({}, $DATABASE );
-        my $pci = POE::Component::IRC::State->spawn(
-            alias       => 'pci_'.$nconf->[0],
-            Nick        => $nconf->[1]->[0],
-            Username    => $nconf->[1]->[1],
-            Ircname     => $nconf->[1]->[2],
-            Resolver    => $resolver,
-            plugin_debug => 0,
-            Server      => $nconf->[2]->[0],
-            Port        => $nconf->[2]->[1],
-        );
-        $pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
-            delay => 150, reconnect => 40,
-        ) );
-        $pci->plugin_add( 'AutoJoin' => POE::Component::IRC::Plugin::AutoJoin->new(
-            Channels => { map { $_ => '' } @{ $nconf->[3] } },
-            RejoinOnKick => 1, Rejoin_delay => 10,
-        ) );
-        #$pci->plugin_add( 'BotCmd' => POE::Component::IRC::Plugin::BotCommand->new(
-        #    Commands => {
-        #    },
-        #    in_channels => 0,
-        #    in_private => 1,
-        #    Ignore_unknown => 1,
-        #) );
-        $pci->plugin_add( 'MyLogger' => PCILogger->new($nconf->[0],$inserter) );
-        $pci->yield( 'connect' => {});
-    }
-    DEBUG 1, "Starting POE Kernel!";
-    POE::Kernel->run();
+    my $inserter = create_inserter( $name, $nconf );
+    
+    my $pci = POE::Component::IRC::State->spawn(
+        alias       => 'pci_'.$name,
+        Nick        => $nconf->{Nick},
+        Username    => $nconf->{Ident},
+        Ircname     => $nconf->{IRCName},
+        Resolver    => $resolver,
+        plugin_debug => 0,
+        Server      => $nconf->{Host},
+        Port        => $nconf->{Port} || 6667,
+    );
+    $pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
+        delay => 150, reconnect => 40,
+    ) );
+    $pci->plugin_add( 'AutoJoin' => POE::Component::IRC::Plugin::AutoJoin->new(
+        Channels => { map { $_ => '' } @{ $nconf->{AutoJoinChannels} } },
+        RejoinOnKick => 1, Rejoin_delay => 10,
+    ) );
+    #$pci->plugin_add( 'BotCmd' => POE::Component::IRC::Plugin::BotCommand->new(
+    #    Commands => {
+    #    },
+    #    in_channels => 0,
+    #    in_private => 1,
+    #    Ignore_unknown => 1,
+    #) );
+    $pci->plugin_add( 'MyLogger' => PCILogger->new($name,$inserter) );
+    #$pci->yield( 'connect' => {});
+}
+
+sub create_inserter {
+    my ($name, $nconf) = @_;
+    
+    my $inserter = POE::Component::Generic->spawn(
+        alias       => 'pcg_'.$name,
+        alt_fork    => 0,
+        debug       => ( $DEBUG_LEVEL > 7 ? 1 : 0),
+        verbose     => ( $DEBUG_LEVEL > 5 ? 1 : 0),
+        package     => 'MyInserter',
+        methods     => [qw[ init connected join kick mode nick part public quit topic ]],
+    );
+    $inserter->init({}, $config->{Database} );
+    
+    return $inserter;
 }
