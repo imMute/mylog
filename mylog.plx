@@ -17,10 +17,10 @@ use Config::General qw/ParseConfig/;
 use Getopt::Long;
 use Data::Dumper;
 use YAML::Syck;
-sub DEBUG (@) { if ( shift(@_) <= $::DEBUG_LEVEL ) { print join "\n", @_; print "\n"; } }
 
 my $conf_filename;
 my $DEBUG_LEVEL = 10;
+sub DEBUG (@) { if ( shift(@_) <= $DEBUG_LEVEL ) { print join "\n", @_; print "\n"; } }
 my $quiet = 0;
 
 GetOptions( "config=s" => \$conf_filename,
@@ -51,6 +51,7 @@ my $resolver = POE::Component::Client::DNS->spawn( Alias => 'resolver' );
 foreach my $key ( keys %{ $config->{Networks} } ){
     create_network( $key, $config->{Networks}->{$key} );
 }
+
 DEBUG 1, "Starting POE Kernel!";
 POE::Kernel->run();
 
@@ -58,39 +59,6 @@ sub create_network {
     my ($name, $nconf) = @_;
     DEBUG 5, "Setting up network '".$name."'";
     DEBUG 7, "  Nick: $nconf->{Nick}","  Ident: $nconf-{Ident}","  Ircname: $nconf->{IRCName}";
-    
-    my $inserter = create_inserter( $name, $nconf );
-    
-    my $pci = POE::Component::IRC::State->spawn(
-        alias       => 'pci_'.$name,
-        Nick        => $nconf->{Nick},
-        Username    => $nconf->{Ident},
-        Ircname     => $nconf->{IRCName},
-        Resolver    => $resolver,
-        plugin_debug => 0,
-        Server      => $nconf->{Host},
-        Port        => $nconf->{Port} || 6667,
-    );
-    $pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
-        delay => 150, reconnect => 40,
-    ) );
-    $pci->plugin_add( 'AutoJoin' => POE::Component::IRC::Plugin::AutoJoin->new(
-        Channels => { map { $_ => '' } @{ $nconf->{AutoJoinChannels} } },
-        RejoinOnKick => 1, Rejoin_delay => 10,
-    ) );
-    #$pci->plugin_add( 'BotCmd' => POE::Component::IRC::Plugin::BotCommand->new(
-    #    Commands => {
-    #    },
-    #    in_channels => 0,
-    #    in_private => 1,
-    #    Ignore_unknown => 1,
-    #) );
-    $pci->plugin_add( 'MyLogger' => PCILogger->new($name,$inserter) );
-    #$pci->yield( 'connect' => {});
-}
-
-sub create_inserter {
-    my ($name, $nconf) = @_;
     
     my $inserter = POE::Component::Generic->spawn(
         alias       => 'pcg_'.$name,
@@ -102,5 +70,38 @@ sub create_inserter {
     );
     $inserter->init({}, $config->{Database} );
     
-    return $inserter;
+    my $pci = POE::Component::IRC::State->spawn(
+        alias       => 'pci_'.$name,
+        Nick        => $nconf->{Nick},
+        Username    => $nconf->{Ident},
+        Ircname     => $nconf->{IRCName},
+        Resolver    => $resolver,
+        plugin_debug => 0,
+        debug       => 0,
+        Server      => $nconf->{Host},
+        Port        => $nconf->{Port} || 6667,
+    );
+    $pci->plugin_add( 'Connector' => POE::Component::IRC::Plugin::Connector->new(
+        delay => 150, reconnect => 40,
+    ) );
+    $pci->plugin_add( 'AutoJoin' => POE::Component::IRC::Plugin::AutoJoin->new(
+        Channels => { map { $_ => '' } @{ $nconf->{AutoJoin} } },
+        RejoinOnKick => 1, Rejoin_delay => 10,
+    ) );
+    #$pci->plugin_add( 'BotCmd' => POE::Component::IRC::Plugin::BotCommand->new(
+    #    Commands => {
+    #    },
+    #    in_channels => 0,
+    #    in_private => 1,
+    #    Ignore_unknown => 1,
+    #    Ignore_Unauthorized => 1,
+    #    Method => 'privmsg',
+    #    Auth_Sub => sub {
+    #        my ($irc,$NIH,$chan,$cmd,$args) = @_;
+    #        return 0 unless $chan eq 'imMute';
+    #        return 1;
+    #    },
+    #) );
+    $pci->plugin_add( 'MyLogger' => PCILogger->new($name,$inserter) );
+    $pci->yield( 'connect' => {});
 }

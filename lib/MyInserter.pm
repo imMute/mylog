@@ -65,7 +65,7 @@ sub init {
             PrintError => 1,
             RaiseError => 1,
         },
-    ) or die "Could not spawn DBI connection: $DBI::errstr";
+    );
     
     $dbh->do('SET search_path = "' . $conf->{DB} .'"');
     
